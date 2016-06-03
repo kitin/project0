@@ -1,7 +1,7 @@
 /* Paths variables */
 var basepath = {
 	src: 'src/',
-	dest: 'htdocs/',
+	dest: 'htdocs/'
 };
 var path = {
     build: {
@@ -14,15 +14,15 @@ var path = {
         js: basepath.src + 'scripts/',
         pug: basepath.src +  '*.pug',
         css: basepath.src + 'scss/*.scss',
-        img: basepath.src + 'images/**/*.*',
+        img: basepath.src + 'images/**/*',
         fonts: basepath.src + 'fonts/*'
     },
     watch: {
         pug: basepath.src + '**/*.pug',
         js: basepath.src + 'scripts/**/*.js',
         css: basepath.src + 'scss/**/*.scss',
-        img: basepath.src + 'images/**/*.*',
-        fonts: basepath.src + 'fonts/*.*'
+        img: basepath.src + 'images/**/*',
+        fonts: basepath.src + 'fonts/**/*'
     },
     sprite: {
         src: basepath.src + '/images/svgSprite/*.svg',
@@ -35,14 +35,15 @@ var path = {
 	Let the magic begin
 */
 var gulp = require('gulp'),
-	browserSync = require('browser-sync').create(), 
+	browserSync = require('browser-sync'), 
     pug = require('gulp-pug'),
     sass = require('gulp-sass'),
     prefixer = require('gulp-autoprefixer'),
-    plumber = require("gulp-plumber"), 
+    plumber = require("gulp-plumber"),
     uglify = require('gulp-uglify'),
     concat = require('gulp-concat'),
     watch = require('gulp-watch'),
+    del = require('del'),
     reload = browserSync.reload;
 
 var $ = {
@@ -92,7 +93,7 @@ gulp.task('userjs', function() {
 
 /* Images */
 gulp.task('images', function () {
-    return gulp.src([path.src.img, '!src/images/svgSprite/*.*']) 
+    return gulp.src([path.src.img, '!src/images/{svgSprite,svgSprite/**}']) 
         .pipe(gulp.dest(path.build.img))
         .pipe(reload({stream: true}));
 });
@@ -100,7 +101,8 @@ gulp.task('images', function () {
 /* Fonts */
 gulp.task('fonts', function() {
     return gulp.src(path.src.fonts)
-        .pipe(gulp.dest(path.build.fonts));
+        .pipe(gulp.dest(path.build.fonts))
+        .pipe(reload({stream: true}));
 });
 
 
@@ -142,6 +144,7 @@ gulp.task('svgSprite', function () {
 
 gulp.task('pngSprite', ['svgSprite'], function() {
 	return gulp.src(basepath.dest + path.sprite.svg)
+        .pipe(plumber())
 		.pipe($.svg2png())
 		.pipe($.size({
 			showFiles: true
@@ -153,7 +156,7 @@ gulp.task('pngSprite', ['svgSprite'], function() {
 gulp.task('sprite', ['pngSprite']);
 
 
-// server
+/* server */
 gulp.task('serve', ['sass'], function() {
 
     browserSync.init({
@@ -166,7 +169,7 @@ gulp.task('serve', ['sass'], function() {
     gulp.watch(path.watch.pug, ['pug']);
     gulp.watch([path.watch.css, '!src/scss/utils/*.*'], ['sass']);
     gulp.watch(path.watch.js, ['vendorjs', 'userjs']);
-    gulp.watch(path.watch.images, ['images']);
+    gulp.watch(path.watch.img, ['images']);
     gulp.watch(path.watch.fonts, ['fonts']);
     //gulp.watch("htdocs/*.html").on('change', browserSync.reload);
 	gulp.watch(path.sprite.src, ['sprite']).on('change', function(evt) {
@@ -175,5 +178,13 @@ gulp.task('serve', ['sass'], function() {
 });
 
 
-// default actions
+/* default actions */
 gulp.task('default', ['serve']);
+
+
+/* clean */
+gulp.task('clean', function() {
+  return del([
+    basepath.dest
+  ])
+});
