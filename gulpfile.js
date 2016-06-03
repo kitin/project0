@@ -7,19 +7,22 @@ var path = {
     build: {
         js: basepath.dest + 'js/',
         css: basepath.dest + 'css/',
-        img: basepath.dest + 'i/'
+        img: basepath.dest + 'i/',
+        fonts: basepath.dest + 'fonts/'
     },
     src: {
-        js: basepath.src + 'scripts/[^_]*.js',
+        js: basepath.src + 'scripts/',
         pug: basepath.src +  '*.pug',
         css: basepath.src + 'scss/*.scss',
         img: basepath.src + 'images/**/*.*',
+        fonts: basepath.src + 'fonts/*'
     },
     watch: {
         pug: basepath.src + '**/*.pug',
         js: basepath.src + 'scripts/**/*.js',
-        css: basepath.src + 'scss/**/*.*',
+        css: basepath.src + 'scss/**/*.scss',
         img: basepath.src + 'images/**/*.*',
+        fonts: basepath.src + 'fonts/*.*'
     },
     sprite: {
         src: basepath.src + '/images/svgSprite/*.svg',
@@ -37,25 +40,28 @@ var gulp = require('gulp'),
     sass = require('gulp-sass'),
     prefixer = require('gulp-autoprefixer'),
     plumber = require("gulp-plumber"), 
-    watch = require('gulp-watch');
+    uglify = require('gulp-uglify'),
+    concat = require('gulp-concat'),
+    watch = require('gulp-watch'),
+    reload = browserSync.reload;
 
 var $ = {
 	gutil: require('gulp-util'),
 	svgSprite: require('gulp-svg-sprite'),
 	svg2png: require('gulp-svg2png'),
-	size: require('gulp-size'),
+	size: require('gulp-size')
 }
 
 
 /* Pug templates */
 gulp.task('pug', function(){
-  gulp.src(path.src.pug)
-    .pipe(plumber())
-    .pipe(pug({
-        pretty: true
-    }))
-    .pipe(gulp.dest('./htdocs/'))
-    .pipe(browserSync.stream());
+    return gulp.src(path.src.pug)
+        .pipe(plumber())
+        .pipe(pug({
+            pretty: true
+        }))
+        .pipe(gulp.dest(basepath.dest))
+        .pipe(reload({stream: true}));
 });
 
 
@@ -65,22 +71,38 @@ gulp.task('sass', function() {
     	.pipe(plumber())
         .pipe(sass.sync())
         .pipe(gulp.dest(path.build.css))
-        .pipe(browserSync.stream());
+        .pipe(reload({stream: true}));
 });
 
-// JS
-gulp.task('js', function () {
-    gulp.src(path.src.js) 
+/* JS */
+gulp.task('vendorjs', function() {
+    return gulp.src(path.src.js+"vendor/*.js")
+        .pipe(uglify())
+        .pipe(concat('vendor.js'))
         .pipe(gulp.dest(path.build.js))
-        .pipe(browserSync.stream());
+        .pipe(reload({stream: true}));
 });
 
-// Images
-gulp.task('images', function () {
-    gulp.src([path.src.img, '!src/images/svgSprite/*.*']) 
-        .pipe(gulp.dest(path.build.img))
-        .pipe(browserSync.stream());
+gulp.task('userjs', function() {
+    return gulp.src(path.src.js+"*.js")
+        .pipe(gulp.dest(path.build.js))
+        .pipe(reload({stream: true}));
 });
+
+
+/* Images */
+gulp.task('images', function () {
+    return gulp.src([path.src.img, '!src/images/svgSprite/*.*']) 
+        .pipe(gulp.dest(path.build.img))
+        .pipe(reload({stream: true}));
+});
+
+/* Fonts */
+gulp.task('fonts', function() {
+    return gulp.src(path.src.fonts)
+        .pipe(gulp.dest(path.build.fonts));
+});
+
 
 /* SVG Sprite */
 var changeEvent = function(evt) {
@@ -125,7 +147,7 @@ gulp.task('pngSprite', ['svgSprite'], function() {
 			showFiles: true
 		}))
 		.pipe(gulp.dest(path.build.img))
-        .pipe(browserSync.stream());
+        .pipe(reload({stream: true}));
 });
 
 gulp.task('sprite', ['pngSprite']);
@@ -141,13 +163,12 @@ gulp.task('serve', ['sass'], function() {
         notify: false,
     });
 
-    gulp.watch(path.src.pug, ['pug']);
-    gulp.watch(path.src.css, ['sass']);
-    gulp.watch(path.src.img, ['images']);
+    gulp.watch(path.watch.pug, ['pug']);
+    gulp.watch([path.watch.css, '!src/scss/utils/*.*'], ['sass']);
+    gulp.watch(path.watch.js, ['vendorjs', 'userjs']);
+    gulp.watch(path.watch.images, ['images']);
+    gulp.watch(path.watch.fonts, ['fonts']);
     //gulp.watch("htdocs/*.html").on('change', browserSync.reload);
-    watch([path.watch.js], function(event, cb) {
-        gulp.start('js');
-    });
 	gulp.watch(path.sprite.src, ['sprite']).on('change', function(evt) {
 		changeEvent(evt);
 	});
