@@ -1,43 +1,42 @@
 /* Paths variables */
 var basepath = {
-	src: 'src/',
-	dest: 'htdocs/'
+    src: 'src/',
+    dest: ''
 };
 var path = {
     build: {
-        js: basepath.dest + 'js/',
-        css: basepath.dest + 'css/',
-        img: basepath.dest + 'i/',
-        fonts: basepath.dest + 'fonts/'
+        js: basepath.dest + 'f/js/',
+        css: basepath.dest + 'f/css/',
+        img: basepath.dest + 'f/i/',
+        fonts: basepath.dest + 'f/fonts/',
+        pug: basepath.dest + 'html/'
     },
     src: {
         js: basepath.src + 'scripts/',
         pug: basepath.src +  '*.pug',
+        php: basepath.src +  '*.php',
         css: basepath.src + 'scss/*.scss',
         img: basepath.src + 'images/**/*',
         fonts: basepath.src + 'fonts/*'
     },
     watch: {
         pug: basepath.src + '**/*.pug',
+        php: basepath.src + '**/*.php',
         js: basepath.src + 'scripts/**/*.js',
         css: basepath.src + 'scss/**/*.scss',
         img: basepath.src + 'images/**/*',
         fonts: basepath.src + 'fonts/**/*'
-    },
-    sprite: {
-        src: basepath.src + '/images/svgSprite/*.svg',
-        svg: 'i/sprite.svg',
-        css: '../../' + basepath.src + 'scss/src/utils/_sprite.scss'
     }
 };
 
 /*
-	Let the magic begin
+    Let the magic begin
 */
 var gulp = require('gulp'),
-	browserSync = require('browser-sync'), 
+    browserSync = require('browser-sync'),
     pug = require('gulp-pug'),
     sass = require('gulp-sass'),
+    stylus = require('gulp-stylus'),
     prefixer = require('gulp-autoprefixer'),
     plumber = require("gulp-plumber"),
     uglify = require('gulp-uglify'),
@@ -46,12 +45,7 @@ var gulp = require('gulp'),
     del = require('del'),
     reload = browserSync.reload;
 
-var $ = {
-	gutil: require('gulp-util'),
-	svgSprite: require('gulp-svg-sprite'),
-	svg2png: require('gulp-svg2png'),
-	size: require('gulp-size')
-}
+
 
 
 /* Pug templates */
@@ -61,7 +55,7 @@ gulp.task('pug', function(){
         .pipe(pug({
             pretty: true
         }))
-        .pipe(gulp.dest(basepath.dest))
+        .pipe(gulp.dest(path.build.pug))
         .pipe(reload({stream: true}));
 });
 
@@ -69,8 +63,20 @@ gulp.task('pug', function(){
 /* Sass */
 gulp.task('sass', function() {
     return gulp.src(path.src.css)
-    	.pipe(plumber())
+        .pipe(plumber())
         .pipe(sass.sync())
+        .pipe(gulp.dest(path.build.css))
+        .pipe(reload({stream: true}));
+});
+
+/* stylus */
+
+gulp.task('styles', function() {
+    return gulp.src(['src/styles/*.styl'])
+        .pipe(plumber())
+        .pipe(stylus())
+        //.pipe(minifyCSS())
+        .on('error', console.log)
         .pipe(gulp.dest(path.build.css))
         .pipe(reload({stream: true}));
 });
@@ -93,7 +99,7 @@ gulp.task('userjs', function() {
 
 /* Images */
 gulp.task('images', function () {
-    return gulp.src([path.src.img, '!src/images/{svgSprite,svgSprite/**}']) 
+    return gulp.src([path.src.img])
         .pipe(gulp.dest(path.build.img))
         .pipe(reload({stream: true}));
 });
@@ -106,75 +112,34 @@ gulp.task('fonts', function() {
 });
 
 
-/* SVG Sprite */
-var changeEvent = function(evt) {
-	$.gutil.log('File', $.gutil.colors.cyan(evt.path.replace(new RegExp('/.*(?=/' + basepath.src + ')/'), '')), 'was', $.gutil.colors.magenta(evt.type));
-};
-
-gulp.task('svgSprite', function () {
-	return gulp.src(path.sprite.src)
-        .pipe(plumber())
-		.pipe($.svgSprite({
-			shape: {
-				spacing: {
-					padding: 5
-				}
-			},
-			mode: {
-				css: {
-					dest: "./",
-					layout: "diagonal",
-					sprite: path.sprite.svg,
-					bust: false,
-					render: {
-						scss: {
-							dest: "../src/scss/utils/_sprite.scss",
-							template: "src/scss/utils/sprite-template.scss"
-						}
-					}
-				}
-			},
-			variables: {
-				mapname: "icons"
-			}
-		}))
-		.pipe(gulp.dest(basepath.dest))
-        .pipe(browserSync.stream());
+/* php */
+gulp.task('php', function() {
+  return gulp.src(path.src.php)
+    .pipe(gulp.dest(basepath.dest));
 });
 
-gulp.task('pngSprite', ['svgSprite'], function() {
-	return gulp.src(basepath.dest + path.sprite.svg)
-        .pipe(plumber())
-		.pipe($.svg2png())
-		.pipe($.size({
-			showFiles: true
-		}))
-		.pipe(gulp.dest(path.build.img))
-        .pipe(reload({stream: true}));
-});
 
-gulp.task('sprite', ['pngSprite']);
+
 
 
 /* server */
-gulp.task('serve', ['sass'], function() {
+gulp.task('serve', ['sass','php'], function() {
 
     browserSync.init({
         server: {
-            baseDir: basepath.dest
+            baseDir: basepath.dest+'html/'
         },
         notify: false,
     });
 
     gulp.watch(path.watch.pug, ['pug']);
-    gulp.watch([path.watch.css, '!src/scss/utils/*.*'], ['sass']);
+    gulp.watch(path.watch.php, ['php']);
+    //gulp.watch([path.watch.css, '!src/scss/utils/*.*'], ['sass']);
+    gulp.watch('src/styles/**', ['styles']);
     gulp.watch(path.watch.js, ['vendorjs', 'userjs']);
     gulp.watch(path.watch.img, ['images']);
     gulp.watch(path.watch.fonts, ['fonts']);
     //gulp.watch("htdocs/*.html").on('change', browserSync.reload);
-	gulp.watch(path.sprite.src, ['sprite']).on('change', function(evt) {
-		changeEvent(evt);
-	});
 });
 
 
