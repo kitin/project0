@@ -1,7 +1,7 @@
 /* Paths variables */
 var basepath = {
     src: 'src/',
-    dest: ''
+    dest: 'htdocs/'
 };
 var path = {
     build: {
@@ -9,7 +9,7 @@ var path = {
         css: basepath.dest + 'f/css/',
         img: basepath.dest + 'f/i/',
         fonts: basepath.dest + 'f/fonts/',
-        pug: basepath.dest + 'html/'
+        pug: basepath.dest
     },
     src: {
         js: basepath.src + 'scripts/',
@@ -127,7 +127,7 @@ gulp.task('serve', ['sass','php'], function() {
 
     browserSync.init({
         server: {
-            baseDir: basepath.dest+'html/'
+            baseDir: basepath.dest
         },
         notify: false,
     });
