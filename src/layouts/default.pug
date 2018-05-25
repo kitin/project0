@@ -1,26 +1,26 @@
 doctype html
 html
-    block head
-        include head
-    block style
-    if workUrl
-        link(href=workUrl, rel="stylesheet", type="text/css")
-    block vars
-    body(class=bodyClass)
-        .iconset
-            include icons.html
+	block head
+		include head
+	block style
+	if workUrl
+		link(href=workUrl, rel="stylesheet", type="text/css")
+	block vars
+	body(class=bodyClass)
+		.iconset
+			include icons.html
 
-        .page-wrapper
-            block header
-                include header
+		.page-wrapper
+			block header
+				include header
 
-            block breadcrumbs
+			block breadcrumbs
 
-            section.b-main-content
-                block content
+			section.b-main-content
+				block content
 
-        block footer
-            include footer
+		block footer
+			include footer
 
-        block foot
-            include foot
+		block foot
+			include foot
